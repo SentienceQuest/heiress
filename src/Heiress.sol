@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-///@title Heirloom
+///@title Heiress
 ///@notice A contract to set the beneficiary of the Sentience Module, which can be claimed after the timer expires
 ///@author SophiaVerse
 ///@dev This contract requires the previous approval of the Sentience Module contract to this contract
@@ -13,21 +13,21 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 //import ReentrancyGuard
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Heirloom is ReentrancyGuard {
+contract Heiress is ReentrancyGuard {
     // Contract variables and state
-    address public densityModule0;
-    address public densityModule1;
-    address public densityModule2;
-    address public densityModule3;
-    address public densityModule4;
+    address public immutable densityModule0;
+    address public immutable densityModule1;
+    address public immutable densityModule2;
+    address public immutable densityModule3;
+    address public immutable densityModule4;
 
     event ModuleSet(address indexed _densityModule, uint256 indexed _moduleId, address _beneficiary, uint256 _timer);
-    event ModuleBenefiaryReplaced(
+    event ModuleBeneficiaryReplaced(
         address indexed _densityModule, uint256 indexed _moduleId, address _previousBeneficiary, address _newBeneficiary
     );
     event ModuleReset(address indexed _densityModule, uint256 indexed _moduleId, uint256 _timer);
     event ModuleClaimed(address indexed _densityModule, uint256 indexed _moduleId, address _beneficiary);
-    event ModuleCanceled(address indexed _densityModule, uint256 indexed _moduleId, uint256 _timer);
+    event ModuleCanceled(address indexed _densityModule, uint256 indexed _moduleId);
 
     // Mapping of densityModule to module id to beneficiary
     mapping(address densityModule => mapping(uint256 moduleId => address beneficiary)) densityModule_beneficiary;
@@ -45,20 +45,17 @@ contract Heirloom is ReentrancyGuard {
         require(
             _densityModule == densityModule0 || _densityModule == densityModule1 || _densityModule == densityModule2
                 || _densityModule == densityModule3 || _densityModule == densityModule4,
-            "Heirloom: This contract is not supported."
+            "Heiress: This contract is not supported."
         );
 
         //Check if the module is not set previously,
         //and if set,
         //then check if the owner is the same, i.e., the module was not transferred
         if (ownerOfWill != address(0) && ownerOfWill == ownerOfModule) {
-            if (densityModule_timer[_densityModule][_moduleId] != 0) {
-                //Check if the module timer is not expired
-                require(
-                    block.timestamp < densityModule_timer[_densityModule][_moduleId],
-                    "Module: The module timer has expired"
-                );
-            }
+            require(
+                block.timestamp < densityModule_timer[_densityModule][_moduleId],
+                "Module: The module timer has expired"
+            );
         }
 
         //Check if the user is the owner of the module
@@ -120,7 +117,7 @@ contract Heirloom is ReentrancyGuard {
             densityModule_beneficiary[_densityModule][_moduleId] = _beneficiary;
             if (_previousBeneficiary != address(0)) {
                 //Emit event
-                emit ModuleBenefiaryReplaced(_densityModule, _moduleId, _previousBeneficiary, _beneficiary);
+                emit ModuleBeneficiaryReplaced(_densityModule, _moduleId, _previousBeneficiary, _beneficiary);
             }
         }
 
@@ -188,7 +185,7 @@ contract Heirloom is ReentrancyGuard {
             emit ModuleClaimed(_densityModule, _moduleId, _beneficiary);
         } else {
             //Emit event
-            emit ModuleCanceled(_densityModule, _moduleId, densityModule_timer[_densityModule][_moduleId]);
+            emit ModuleCanceled(_densityModule, _moduleId);
         }
     }
 

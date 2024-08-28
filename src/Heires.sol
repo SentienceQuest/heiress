@@ -1,61 +1,113 @@
 // SPDX-License-Identifier: MIT
-///@title Heirloom
-///@notice A contract to set the beneficiary of the Sentience Module, which can be claimed after the timer expires
-///@author SophiaVerse
-///@dev This contract requires the previous approval of the Sentience Module contract to this contract
-///@dev A Sentience Module is represented by an ERC6551 which is implemented with ERC721
+///@title Heir/es Protocol
+///@notice A contract to set the beneficiary of a Trust, which can be claimed after the timer expires
+///@author MiguelBits , futjr
+///@dev This contract requires the previous approval of the Heir/es Module contract to this contract
+///@dev A Heir/es Module is represented by an ERC6551 which is implemented with ERC721
 
 pragma solidity 0.8.20;
 
+/*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Note to the User:
+// Author: 0xMiguelBits
+// Reviewer: futjr                      
+                          @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@             @@@@@@@@@@@@@                          
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            @@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@           @@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            @@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            @@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            @@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            @@@@@@@@@@@@@@                         
+                         @@%%%%%%%%%%%%@@%@@@@@@@@@@@@@@@@@@@@@@@            @%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         %%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         %%%%%%%%%%%%%%@                ####                 %%%%%%%%%%%%%%                         
+                         @%%%%%%%%%%%%%                ######                %%%%%%%%%%%%%@                         
+                                                      ########                                                      
+                                                     #%########                                                     
+                                                    ########%%##                                                    
+                                                   ##############                                                   
+                                                     ###########                                                    
+                                                      #%#####%                                                      
+                          %%%%%%%%%%%%%                ##%###                %%%%%%%%%%%%%@                         
+                         %%%%%%%%%%%%%%%                %%#%                 %%%%%%%%%%%%%@                         
+                         %%%%%%%%%%%%%%@                 %%                  %%%%%%%%%%%%%@                         
+                         %%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@                                     %%%%%%%%%%%%%@                         
+                         @%%%%%%%%%%%%%@            @@@@@@@@@@@@@@@@@@@@@@@@@@%%%%%%%%%%%%@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                         @@@@@@@@@@@@@@@           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                          @@@@@@@@@@@@@             @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                         
+                                                                                                                    
+                                                                                                                    
+                                                                                                                    
+                                                                                                                    
+                                                                                     %@%                            
+                          %%   %%%   %%%%%%    %%    %%%%%%%       %%   @%%%%%%   %%%%@%%%                          
+                          %%   %%%   %%        %%    %%   %%@     %%%   @%        %%                                
+                          %%@@@%%@   %%@@@@    %@    @@@@@%%     @@@    @%@@@@@    @@%@@@                           
+                          @@   @@@   @@        @@    @@  @@     @@@     @@              @@@                         
+                          @@   @@@   @@        @@    @@   @@   @@@      @@        @@@   @@@                         
+                          @@    @    @@@@@@    @@    @@    @   @@        @@@@@@     @@@@@                           
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 //import IERC721
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 //import ReentrancyGuard
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Heirloom is ReentrancyGuard {
+contract Heires is ReentrancyGuard {
     // Contract variables and state
-    address public densityModule0;
-    address public densityModule1;
-    address public densityModule2;
-    address public densityModule3;
-    address public densityModule4;
+    address public descendantModule0;
+    address public descendantModule1;
+    address public descendantModule2;
+    address public descendantModule3;
+    address public descendantModule4;
 
-    event ModuleSet(address indexed _densityModule, uint256 indexed _moduleId, address _beneficiary, uint256 _timer);
+    event ModuleSet(address indexed _descendantModule, uint256 indexed _moduleId, address _beneficiary, uint256 _timer);
     event ModuleBenefiaryReplaced(
-        address indexed _densityModule, uint256 indexed _moduleId, address _previousBeneficiary, address _newBeneficiary
+        address indexed _descendantModule, uint256 indexed _moduleId, address _previousBeneficiary, address _newBeneficiary
     );
-    event ModuleReset(address indexed _densityModule, uint256 indexed _moduleId, uint256 _timer);
-    event ModuleClaimed(address indexed _densityModule, uint256 indexed _moduleId, address _beneficiary);
-    event ModuleCanceled(address indexed _densityModule, uint256 indexed _moduleId, uint256 _timer);
+    event ModuleReset(address indexed _descendantModule, uint256 indexed _moduleId, uint256 _timer);
+    event ModuleClaimed(address indexed _descendantModule, uint256 indexed _moduleId, address _beneficiary);
+    event ModuleCanceled(address indexed _descendantModule, uint256 indexed _moduleId, uint256 _timer);
 
-    // Mapping of densityModule to module id to beneficiary
-    mapping(address densityModule => mapping(uint256 moduleId => address beneficiary)) densityModule_beneficiary;
-    // Mapping of densityModule to module id to timer
-    mapping(address densityModule => mapping(uint256 moduleId => uint256 timer)) densityModule_timer;
-    // Mapping of densityModule to module id to owner
-    mapping(address densityModule => mapping(uint256 moduleId => address owner)) densityModule_owner;
+    // Mapping of descendantModule to module id to beneficiary
+    mapping(address descendantModule => mapping(uint256 moduleId => address beneficiary)) descendantModule_beneficiary;
+    // Mapping of descendantModule to module id to timer
+    mapping(address descendantModule => mapping(uint256 moduleId => uint256 timer)) descendantModule_timer;
+    // Mapping of descendantModule to module id to owner
+    mapping(address descendantModule => mapping(uint256 moduleId => address owner)) descendantModule_owner;
 
     ///@notice Checks if the module is supported by the contract, if there is timer is not expired, if the user is the owner of the module and if the user has approved the module to this contract
-    modifier moduleSupportedRequirements(address _densityModule, uint256 _moduleId) {
-        address ownerOfModule = IERC721(_densityModule).ownerOf(_moduleId);
-        address ownerOfWill = densityModule_owner[_densityModule][_moduleId];
+    modifier moduleSupportedRequirements(address _descendantModule, uint256 _moduleId) {
+        address ownerOfModule = IERC721(_descendantModule).ownerOf(_moduleId);
+        address ownerOfWill = descendantModule_owner[_descendantModule][_moduleId];
 
-        //Check if _densityModule is one of the approved densityModules
+        //Check if _descendantModule is one of the approved descendantModules
         require(
-            _densityModule == densityModule0 || _densityModule == densityModule1 || _densityModule == densityModule2
-                || _densityModule == densityModule3 || _densityModule == densityModule4,
-            "Heirloom: This contract is not supported."
+            _descendantModule == descendantModule0 || _descendantModule == descendantModule1 || _descendantModule == descendantModule2
+                || _descendantModule == descendantModule3 || _descendantModule == descendantModule4,
+            "Heires: This contract is not supported."
         );
 
         //Check if the module is not set previously,
         //and if set,
         //then check if the owner is the same, i.e., the module was not transferred
         if (ownerOfWill != address(0) && ownerOfWill == ownerOfModule) {
-            if (densityModule_timer[_densityModule][_moduleId] != 0) {
+            if (descendantModule_timer[_descendantModule][_moduleId] != 0) {
                 //Check if the module timer is not expired
                 require(
-                    block.timestamp < densityModule_timer[_densityModule][_moduleId],
+                    block.timestamp < descendantModule_timer[_descendantModule][_moduleId],
                     "Module: The module timer has expired"
                 );
             }
@@ -64,143 +116,143 @@ contract Heirloom is ReentrancyGuard {
         //Check if the user is the owner of the module
         require(msg.sender == ownerOfModule, "Module: Only the owner of the module can call this function");
 
-        //Check if user approved the densityModule to this contract; //isApprovedForAll(address owner, address operator)
+        //Check if user approved the descendantModule to this contract; //isApprovedForAll(address owner, address operator)
         require(
-            IERC721(_densityModule).isApprovedForAll(msg.sender, address(this)),
-            "Module: User has not approved the densityModule to this contract"
+            IERC721(_descendantModule).isApprovedForAll(msg.sender, address(this)),
+            "Module: User has not approved the descendantModule to this contract"
         );
 
         _;
     }
 
     ///@notice Checks if the module was set previously
-    modifier moduleSetRequirements(address _densityModule, uint256 _moduleId) {
+    modifier moduleSetRequirements(address _descendantModule, uint256 _moduleId) {
         //Check if the module timer is not 0
-        require(densityModule_timer[_densityModule][_moduleId] != 0, "Module: Module settings requirements not met.");
+        require(descendantModule_timer[_descendantModule][_moduleId] != 0, "Module: Module settings requirements not met.");
         _;
     }
 
-    ///@param _densityModule0 The address of the first tier densityModule
-    ///@param _densityModule1 The address of the second tier densityModule
-    ///@param _densityModule2 The address of the third tier densityModule
-    ///@param _densityModule3 The address of the fourth tier densityModule
-    ///@param _densityModule4 The address of the fifth tier densityModule
+    ///@param _descendantModule0 The address of the first tier descendantModule
+    ///@param _descendantModule1 The address of the second tier descendantModule
+    ///@param _descendantModule2 The address of the third tier descendantModule
+    ///@param _descendantModule3 The address of the fourth tier descendantModule
+    ///@param _descendantModule4 The address of the fifth tier descendantModule
     constructor(
-        address _densityModule0,
-        address _densityModule1,
-        address _densityModule2,
-        address _densityModule3,
-        address _densityModule4
+        address _descendantModule0,
+        address _descendantModule1,
+        address _descendantModule2,
+        address _descendantModule3,
+        address _descendantModule4
     ) {
         // Initialize contract state
-        densityModule0 = _densityModule0;
-        densityModule1 = _densityModule1;
-        densityModule2 = _densityModule2;
-        densityModule3 = _densityModule3;
-        densityModule4 = _densityModule4;
+        descendantModule0 = _descendantModule0;
+        descendantModule1 = _descendantModule1;
+        descendantModule2 = _descendantModule2;
+        descendantModule3 = _descendantModule3;
+        descendantModule4 = _descendantModule4;
     }
 
     ///@notice This function allows the user to set the beneficiary of the module, which can be claimed after the timer expires
     ///@notice This function can be called by the owner of the module only, anytime before the timer expires
     ///@dev This function requires previous approval of Sentience Module contract to this contract
-    ///@param _densityModule The address of the densityModule
+    ///@param _descendantModule The address of the descendantModule
     ///@param _moduleId The id of the module
     ///@param _timer The time in seconds after which the module can be claimed
     ///@param _beneficiary The address of the beneficiary
-    function setModule(address _densityModule, uint256 _moduleId, uint256 _timer, address _beneficiary)
+    function setModule(address _descendantModule, uint256 _moduleId, uint256 _timer, address _beneficiary)
         external
-        moduleSupportedRequirements(_densityModule, _moduleId)
+        moduleSupportedRequirements(_descendantModule, _moduleId)
     {
         //Check if the beneficiary is not address(0)
         require(_beneficiary != address(0), "Beneficiary cannot be address(0)");
 
-        address _previousBeneficiary = densityModule_beneficiary[_densityModule][_moduleId];
+        address _previousBeneficiary = descendantModule_beneficiary[_descendantModule][_moduleId];
         if (_previousBeneficiary != _beneficiary) {
             //Set the beneficiary of the module
-            densityModule_beneficiary[_densityModule][_moduleId] = _beneficiary;
+            descendantModule_beneficiary[_descendantModule][_moduleId] = _beneficiary;
             if (_previousBeneficiary != address(0)) {
                 //Emit event
-                emit ModuleBenefiaryReplaced(_densityModule, _moduleId, _previousBeneficiary, _beneficiary);
+                emit ModuleBenefiaryReplaced(_descendantModule, _moduleId, _previousBeneficiary, _beneficiary);
             }
         }
 
         //Set the timer of the module
-        densityModule_timer[_densityModule][_moduleId] = block.timestamp + _timer;
+        descendantModule_timer[_descendantModule][_moduleId] = block.timestamp + _timer;
 
         //Set the owner of the module
-        densityModule_owner[_densityModule][_moduleId] = msg.sender;
+        descendantModule_owner[_descendantModule][_moduleId] = msg.sender;
 
         //Emit event
-        emit ModuleSet(_densityModule, _moduleId, _beneficiary, _timer);
+        emit ModuleSet(_descendantModule, _moduleId, _beneficiary, _timer);
     }
 
     ///@notice This function allows the user to reset the timer of the module
     ///@notice This function can be called by the owner of the module only, anytime before the timer expires
     ///@dev This function requires previous set of the module
-    ///@param _densityModule The address of the densityModule
+    ///@param _descendantModule The address of the descendantModule
     ///@param _moduleId The id of the module
     ///@param _timer The time in seconds after which the module can be claimed
-    function resetModuleTimer(address _densityModule, uint256 _moduleId, uint256 _timer)
+    function resetModuleTimer(address _descendantModule, uint256 _moduleId, uint256 _timer)
         external
-        moduleSetRequirements(_densityModule, _moduleId)
-        moduleSupportedRequirements(_densityModule, _moduleId)
+        moduleSetRequirements(_descendantModule, _moduleId)
+        moduleSupportedRequirements(_descendantModule, _moduleId)
     {
         //Reset the timer of the module
-        densityModule_timer[_densityModule][_moduleId] = block.timestamp + _timer;
+        descendantModule_timer[_descendantModule][_moduleId] = block.timestamp + _timer;
 
         //Emit event
-        emit ModuleReset(_densityModule, _moduleId, _timer);
+        emit ModuleReset(_descendantModule, _moduleId, _timer);
     }
 
     ///@notice This function allows the user to claim the module after the timer expires, and the module can be claimed for the beneficiary
     ///@dev This function requires previous set of the module, and if module changes ownership
-    ///@param _densityModule The address of the densityModule
+    ///@param _descendantModule The address of the descendantModule
     ///@param _moduleId The id of the module
-    function claimModule(address _densityModule, uint256 _moduleId) external nonReentrant {
+    function claimModule(address _descendantModule, uint256 _moduleId) external nonReentrant {
         //Check if the module timer is expired
         require(
-            block.timestamp >= densityModule_timer[_densityModule][_moduleId],
+            block.timestamp >= descendantModule_timer[_descendantModule][_moduleId],
             "Module: The module timer has not expired yet"
         );
 
         //Check if the module owner is the same, and the module was not transferred
-        address _owner = densityModule_owner[_densityModule][_moduleId];
-        address _beneficiary = densityModule_beneficiary[_densityModule][_moduleId];
+        address _owner = descendantModule_owner[_descendantModule][_moduleId];
+        address _beneficiary = descendantModule_beneficiary[_descendantModule][_moduleId];
 
         //Reset the timer of the module
-        densityModule_timer[_densityModule][_moduleId] = 0;
+        descendantModule_timer[_descendantModule][_moduleId] = 0;
 
         //Reset the beneficiary of the module
-        densityModule_beneficiary[_densityModule][_moduleId] = address(0);
+        descendantModule_beneficiary[_descendantModule][_moduleId] = address(0);
 
         //Reset the owner of the module
-        densityModule_owner[_densityModule][_moduleId] = address(0);
+        descendantModule_owner[_descendantModule][_moduleId] = address(0);
 
         //If the module is not approved for this contract or owner transferred module, then reset module mappings
         if (
-            IERC721(_densityModule).isApprovedForAll(_owner, address(this))
-                && IERC721(_densityModule).ownerOf(_moduleId) == _owner
+            IERC721(_descendantModule).isApprovedForAll(_owner, address(this))
+                && IERC721(_descendantModule).ownerOf(_moduleId) == _owner
         ) {
             //Safe transfer the module to the beneficiary
-            IERC721(_densityModule).safeTransferFrom(_owner, _beneficiary, _moduleId);
+            IERC721(_descendantModule).safeTransferFrom(_owner, _beneficiary, _moduleId);
 
             //Emit event
-            emit ModuleClaimed(_densityModule, _moduleId, _beneficiary);
+            emit ModuleClaimed(_descendantModule, _moduleId, _beneficiary);
         } else {
             //Emit event
-            emit ModuleCanceled(_densityModule, _moduleId, densityModule_timer[_densityModule][_moduleId]);
+            emit ModuleCanceled(_descendantModule, _moduleId, descendantModule_timer[_descendantModule][_moduleId]);
         }
     }
 
     ///@notice This function allows the user to view the information of the module, i.e., the beneficiary and the timer
-    ///@param _densityModule The address of the densityModule
+    ///@param _descendantModule The address of the descendantModule
     ///@param _moduleId The id of the module
     ///@return The address of the beneficiary and the timer of the module
-    function viewModuleInformation(address _densityModule, uint256 _moduleId)
+    function viewModuleInformation(address _descendantModule, uint256 _moduleId)
         external
         view
         returns (address, uint256)
     {
-        return (densityModule_beneficiary[_densityModule][_moduleId], densityModule_timer[_densityModule][_moduleId]);
+        return (descendantModule_beneficiary[_descendantModule][_moduleId], descendantModule_timer[_descendantModule][_moduleId]);
     }
 }

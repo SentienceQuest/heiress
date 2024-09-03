@@ -5,11 +5,11 @@ import {Heires} from "../src/Heires.sol";
 import "forge-std/Script.sol";
 
 contract DeployScriptMainnet is Script {
-    address descendantModule0 = 0x8F4715485A25309322D7E095C4bF4Fdb2A0FdC92;
-    address descendantModule1 = 0x8F4715485A25309322D7E095C4bF4Fdb2A0FdC92;
-    address descendantModule2 = 0x8F4715485A25309322D7E095C4bF4Fdb2A0FdC92;
-    address descendantModule3 = 0x8F4715485A25309322D7E095C4bF4Fdb2A0FdC92;
-    address descendantModule4 = 0x8F4715485A25309322D7E095C4bF4Fdb2A0FdC92;
+    address descendantModule0 = 0xFB3a1745e9dDb9bd40a3f395bc76C4fd1A85c96c;
+    address descendantModule1 = 0xFB3a1745e9dDb9bd40a3f395bc76C4fd1A85c96c;
+    address descendantModule2 = 0xFB3a1745e9dDb9bd40a3f395bc76C4fd1A85c96c;
+    address descendantModule3 = 0xFB3a1745e9dDb9bd40a3f395bc76C4fd1A85c96c;
+    address descendantModule4 = 0xFB3a1745e9dDb9bd40a3f395bc76C4fd1A85c96c;
 
     function run() public returns (Heires heirloom) {
         heirloom = new Heires(descendantModule0, descendantModule1, descendantModule2, descendantModule3, descendantModule4);
